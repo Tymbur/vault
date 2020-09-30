@@ -34,10 +34,10 @@
     "react-dom": "^16.13.1"
   },
   "devDependencies": {
-    "dart-linkcheck": "^2.0.15",
-    "husky": "^4.2.5",
-    "inquirer": "^7.1.0",
-    "prettier": "^2.0.5"
+    "dart-linkcheck": "2.0.15",
+    "husky": "4.2.5",
+    "inquirer": "7.1.0",
+    "prettier": "2.0.5"
   },
   "husky": {
     "hooks": {
