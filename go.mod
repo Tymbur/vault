@@ -30,11 +30,9 @@ require (
 	github.com/chrismalek/oktasdk-go v0.0.0-20181212195951-3430665dfaa0
 	github.com/client9/misspell v0.3.4
 	github.com/cockroachdb/cockroach-go v0.0.0-20181001143604-e0a95dfd547c
-	github.com/containerd/containerd v1.3.4 // indirect
 	github.com/coreos/go-semver v0.2.0
 	github.com/denisenkom/go-mssqldb v0.0.0-20200428022330-06a60b6afbbc
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
-	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/dsnet/compress v0.0.1 // indirect
@@ -150,7 +148,7 @@ require (
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200425165423-262c93980547
 	go.mongodb.org/mongo-driver v1.2.1
 	go.uber.org/atomic v1.6.0
-	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
+	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
