@@ -799,7 +799,7 @@ github.com/rboyer/safeio
 github.com/ryanuber/columnize
 # github.com/ryanuber/go-glob v1.0.0
 github.com/ryanuber/go-glob
-# github.com/samuel/go-zookeeper v0.0.0-20180130194729-c4fab1ac1bec
+# github.com/samuel/go-zookeeper v0.0.0-20200724154423-2164a8ac840e
 github.com/samuel/go-zookeeper/zk
 # github.com/sasha-s/go-deadlock v0.2.0
 github.com/sasha-s/go-deadlock
