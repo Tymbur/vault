@@ -4896,10 +4896,10 @@ builtins@^1.0.3:
   resolved "https://registry.yarnpkg.com/builtins/-/builtins-1.0.3.tgz#cb94faeb61c8696451db36534e1422f94f0aee88"
   integrity sha1-y5T662HIaWRR2zZTThQi+U8K7og=
 
-bulma-switch@0.0.1:
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/bulma-switch/-/bulma-switch-0.0.1.tgz#2de6eb7c602244de7c5efa880b3b19b8464012a9"
-  integrity sha1-LebrfGAiRN58XvqICzsZuEZAEqk=
+bulma-switch@0.1.12:
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/bulma-switch/-/bulma-switch-0.1.12.tgz#264eb53a1c3f9136e383fc08abb434b8fb84e186"
+  integrity sha1-Jk61Ohw/kTbjg/wIq7Q0uPuE4YY=
 
 bulma@0.5.3:
   version "0.5.3"
