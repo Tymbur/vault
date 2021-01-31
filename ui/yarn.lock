@@ -4901,10 +4901,10 @@ bulma-switch@0.0.1:
   resolved "https://registry.yarnpkg.com/bulma-switch/-/bulma-switch-0.0.1.tgz#2de6eb7c602244de7c5efa880b3b19b8464012a9"
   integrity sha1-LebrfGAiRN58XvqICzsZuEZAEqk=
 
-bulma@0.5.3:
-  version "0.5.3"
-  resolved "https://registry.yarnpkg.com/bulma/-/bulma-0.5.3.tgz#be93afb6246192505c30df3f9c1c29a97d319a13"
-  integrity sha1-vpOvtiRhklBcMN8/nBwpqX0xmhM=
+bulma@0.9.2:
+  version "0.9.2"
+  resolved "https://registry.yarnpkg.com/bulma/-/bulma-0.9.2.tgz#340011e119c605f19b8ca886bfea595f1deaf23c"
+  integrity sha512-e14EF+3VSZ488yL/lJH0tR8mFWiEQVCMi/BQUMi2TGMBOk+zrDg4wryuwm/+dRSHJw0gMawp2tsW7X1JYUCE3A==
 
 bytes@1:
   version "1.0.0"
