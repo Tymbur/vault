@@ -97,7 +97,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/ram
 github.com/aliyun/alibaba-cloud-sdk-go/services/sts
 # github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190307165228-86c17b95fcd5
 github.com/aliyun/aliyun-oss-go-sdk/oss
-# github.com/apple/foundationdb/bindings/go v0.0.0-20201020224846-73e77f31eb31
+# github.com/apple/foundationdb/bindings/go v0.0.0-20210210185738-1dac11754364
 github.com/apple/foundationdb/bindings/go/src/fdb
 github.com/apple/foundationdb/bindings/go/src/fdb/directory
 github.com/apple/foundationdb/bindings/go/src/fdb/subspace

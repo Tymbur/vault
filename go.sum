@@ -116,6 +116,8 @@ github.com/apple/foundationdb/bindings/go v0.0.0-20190411004307-cd5c9d91fad2 h1:
 github.com/apple/foundationdb/bindings/go v0.0.0-20190411004307-cd5c9d91fad2/go.mod h1:OMVSB21p9+xQUIqlGizHPZfjK+SHws1ht+ZytVDoz9U=
 github.com/apple/foundationdb/bindings/go v0.0.0-20201020224846-73e77f31eb31 h1:d8froKrf5/e4iYbCu7RobkhRONT5M3Lck16eGvH3eRg=
 github.com/apple/foundationdb/bindings/go v0.0.0-20201020224846-73e77f31eb31/go.mod h1:w63jdZTFCtvdjsUj5yrdKgjxaAD5uXQX6hJ7EaiLFRs=
+github.com/apple/foundationdb/bindings/go v0.0.0-20210210185738-1dac11754364 h1:Q/YkxgAMZ0Hb9YC7IpGZONg76mKHl/M5YOe+BCojHt0=
+github.com/apple/foundationdb/bindings/go v0.0.0-20210210185738-1dac11754364/go.mod h1:w63jdZTFCtvdjsUj5yrdKgjxaAD5uXQX6hJ7EaiLFRs=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
