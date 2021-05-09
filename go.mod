@@ -134,7 +134,7 @@ require (
 	github.com/rboyer/safeio v0.2.1
 	github.com/ryanuber/columnize v2.1.0+incompatible
 	github.com/ryanuber/go-glob v1.0.0
-	github.com/samuel/go-zookeeper v0.0.0-20200724154423-2164a8ac840e
+	github.com/samuel/go-zookeeper 7117e9ea2414
 	github.com/sasha-s/go-deadlock v0.2.0
 	github.com/sethvargo/go-limiter v0.3.0
 	github.com/shirou/gopsutil v2.20.6-0.20200630091542-01afd763e6c0+incompatible
