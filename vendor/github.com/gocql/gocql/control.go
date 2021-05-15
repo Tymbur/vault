@@ -125,7 +125,7 @@ func hostInfo(addr string, defaultPort int) ([]*HostInfo, error) {
 	if err != nil {
 		return nil, err
 	} else if len(ips) == 0 {
-		return nil, fmt.Errorf("No IP's returned from DNS lookup for %q", addr)
+		return nil, fmt.Errorf("no IP's returned from DNS lookup for %q", addr)
 	}
 
 	// Filter to v4 addresses if any present
@@ -177,7 +177,7 @@ func (c *controlConn) shuffleDial(endpoints []*HostInfo) (*Conn, error) {
 			return conn, nil
 		}
 
-		Logger.Printf("gocql: unable to dial control conn %v: %v\n", host.ConnectAddress(), err)
+		c.session.logger.Printf("gocql: unable to dial control conn %v:%v: %v\n", host.ConnectAddress(), host.Port(), err)
 	}
 
 	return nil, err
@@ -285,8 +285,15 @@ func (c *controlConn) setupConn(conn *Conn) error {
 	}
 
 	c.conn.Store(ch)
-	c.session.handleNodeUp(host.ConnectAddress(), host.Port(), false)
-
+	if c.session.initialized() {
+		// We connected to control conn, so add the connect the host in pool as well.
+		// Notify session we can start trying to connect to the node.
+		// We can't start the fill before the session is initialized, otherwise the fill would interfere
+		// with the fill called by Session.init. Session.init needs to wait for its fill to finish and that
+		// would return immediately if we started the fill here.
+		// TODO(martin-sucha): Trigger pool refill for all hosts, like in reconnectDownedHosts?
+		go c.session.startPoolFill(host)
+	}
 	return nil
 }
 
@@ -374,7 +381,7 @@ func (c *controlConn) reconnect(refreshring bool) {
 
 	if err := c.setupConn(newConn); err != nil {
 		newConn.Close()
-		Logger.Printf("gocql: control unable to register events: %v\n", err)
+		c.session.logger.Printf("gocql: control unable to register events: %v\n", err)
 		return
 	}
 
@@ -452,11 +459,13 @@ func (c *controlConn) query(statement string, values ...interface{}) (iter *Iter
 
 	for {
 		iter = c.withConn(func(conn *Conn) *Iter {
+			// we want to keep the query on the control connection
+			q.conn = conn
 			return conn.executeQuery(context.TODO(), q)
 		})
 
 		if gocqlDebug && iter.err != nil {
-			Logger.Printf("control: error executing %q: %v\n", statement, iter.err)
+			c.session.logger.Printf("control: error executing %q: %v\n", statement, iter.err)
 		}
 
 		q.AddAttempts(1, c.getConn().host)
