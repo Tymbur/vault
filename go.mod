@@ -7,9 +7,9 @@ replace github.com/hashicorp/vault/api => ./api
 replace github.com/hashicorp/vault/sdk => ./sdk
 
 require (
-	cloud.google.com/go v0.56.0
+	cloud.google.com/go v0.65.0
 	cloud.google.com/go/spanner v1.5.1
-	cloud.google.com/go/storage v1.6.0
+	cloud.google.com/go/storage v1.10.0
 	github.com/Azure/azure-sdk-for-go v36.2.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.10.1
 	github.com/DataDog/zstd v1.4.5 // indirect
@@ -149,12 +149,11 @@ require (
 	go.mongodb.org/mongo-driver v1.2.1
 	go.uber.org/atomic v1.6.0
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
-	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
-	golang.org/x/tools v0.0.0-20200521155704-91d71f6c2f04
-	google.golang.org/api v0.29.0
-	google.golang.org/grpc v1.29.1
+	golang.org/x/net v0.0.0-20200822124328-c89045814202
+	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
+	golang.org/x/tools v0.0.0-20200825202427-b303f430e36d
+	google.golang.org/api v0.30.0
+	google.golang.org/grpc v1.31.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce
 	gopkg.in/ory-am/dockertest.v3 v3.3.4
