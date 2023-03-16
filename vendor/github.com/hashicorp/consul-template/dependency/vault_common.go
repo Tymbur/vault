@@ -1,17 +1,20 @@
 package dependency
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand"
+	"sync"
 	"time"
 
-	"encoding/json"
 	"github.com/hashicorp/vault/api"
 )
 
 var (
 	// VaultDefaultLeaseDuration is the default lease duration in seconds.
-	VaultDefaultLeaseDuration = 5 * time.Minute
+	VaultDefaultLeaseDuration     time.Duration
+	onceVaultDefaultLeaseDuration sync.Once
 )
 
 // Secret is the structure returned for every secret within Vault.
@@ -116,6 +119,16 @@ func leaseCheckWait(s *Secret) time.Duration {
 			if expData, err := expInterface.(json.Number).Int64(); err == nil {
 				base = int(expData - time.Now().Unix())
 				log.Printf("[DEBUG] Found certificate and set lease duration to %d seconds", base)
+			}
+		}
+	}
+
+	// Handle if this is an AppRole secret_id with no lease
+	if _, ok := s.Data["secret_id"]; ok && s.LeaseID == "" {
+		if expInterface, ok := s.Data["secret_id_ttl"]; ok {
+			if ttlData, err := expInterface.(json.Number).Int64(); err == nil && ttlData > 0 {
+				base = int(ttlData) + 1
+				log.Printf("[DEBUG] Found approle secret_id and non-zero secret_id_ttl, setting lease duration to %d seconds", base)
 			}
 		}
 	}
@@ -301,6 +314,9 @@ func isKVv2(client *api.Client, path string) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
+	if secret == nil {
+		return "", false, fmt.Errorf("secret at path %s does not exist", path)
+	}
 	var mountPath string
 	if mountPathRaw, ok := secret.Data["path"]; ok {
 		mountPath = mountPathRaw.(string)
@@ -326,4 +342,12 @@ func isKVv2(client *api.Client, path string) (string, bool, error) {
 	}
 
 	return mountPath, false, nil
+}
+
+// Make sure to only set VaultDefaultLeaseDuration once
+func SetVaultDefaultLeaseDuration(t time.Duration) {
+	set := func() {
+		VaultDefaultLeaseDuration = t
+	}
+	onceVaultDefaultLeaseDuration.Do(set)
 }
