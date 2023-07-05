@@ -17,8 +17,8 @@ require (
 	github.com/frankban/quicktest v1.10.0 // indirect
 	github.com/go-ldap/ldap/v3 v3.1.10
 	github.com/go-test/deep v1.0.2
-	github.com/golang/protobuf v1.4.2
-	github.com/golang/snappy v0.0.1
+	github.com/golang/protobuf v1.5.2
+	github.com/golang/snappy v0.0.3
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/hashicorp/errwrap v1.0.0
 	github.com/hashicorp/go-cleanhttp v0.5.1
@@ -46,12 +46,11 @@ require (
 	github.com/pierrec/lz4 v2.5.2+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/ryanuber/go-glob v1.0.0
-	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
-	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
-	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980
-	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
-	google.golang.org/grpc v1.29.1
-	google.golang.org/protobuf v1.25.0
+	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa
+	golang.org/x/net v0.5.0
+	golang.org/x/sys v0.4.0
+	google.golang.org/grpc v1.53.0
+	google.golang.org/protobuf v1.28.1
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gotest.tools/v3 v3.0.2 // indirect
 )
