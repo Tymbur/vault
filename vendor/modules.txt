@@ -561,7 +561,7 @@ github.com/hashicorp/vault/sdk/testing/stepwise/environments/docker
 github.com/hashicorp/vault/sdk/version
 # github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d
 github.com/hashicorp/yamux
-# github.com/influxdata/influxdb v0.0.0-20190411212539-d24b7ba8c4c4
+# github.com/influxdata/influxdb v1.7.6
 github.com/influxdata/influxdb/client/v2
 github.com/influxdata/influxdb/models
 github.com/influxdata/influxdb/pkg/escape
