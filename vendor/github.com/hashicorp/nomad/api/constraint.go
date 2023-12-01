@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package api
 
 const (
@@ -15,9 +18,9 @@ const (
 
 // Constraint is used to serialize a job placement constraint.
 type Constraint struct {
-	LTarget string
-	RTarget string
-	Operand string
+	LTarget string `hcl:"attribute,optional"`
+	RTarget string `hcl:"value,optional"`
+	Operand string `hcl:"operator,optional"`
 }
 
 // NewConstraint generates a new job placement constraint.

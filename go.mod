@@ -55,13 +55,13 @@ require (
 	github.com/hashicorp/consul/api v1.4.0
 	github.com/hashicorp/errwrap v1.0.0
 	github.com/hashicorp/go-bindata v3.0.8-0.20180209072458-bf7910af8997+incompatible
-	github.com/hashicorp/go-cleanhttp v0.5.1
+	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-gcp-common v0.6.0
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-kms-wrapping v0.5.12
 	github.com/hashicorp/go-memdb v1.0.2
 	github.com/hashicorp/go-msgpack v0.5.5
-	github.com/hashicorp/go-multierror v1.1.0
+	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-raftchunking v0.6.3-0.20191002164813-7e9e8525653a
 	github.com/hashicorp/go-retryablehttp v0.6.7
 	github.com/hashicorp/go-rootcerts v1.0.2
@@ -70,7 +70,7 @@ require (
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/golang-lru v0.5.3
 	github.com/hashicorp/hcl v1.0.0
-	github.com/hashicorp/nomad/api v0.0.0-20191220223628-edc62acd919d
+	github.com/hashicorp/nomad/api v0.0.0-20231201215723-d34788896f88
 	github.com/hashicorp/raft v1.1.3-0.20200914140732-b7cd2b346b06
 	github.com/hashicorp/raft-snapshot v1.0.2-0.20190827162939-8117efcc5aab
 	github.com/hashicorp/vault-plugin-auth-alicloud v0.5.5
@@ -111,9 +111,9 @@ require (
 	github.com/mitchellh/cli v1.0.0
 	github.com/mitchellh/copystructure v1.0.0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mitchellh/go-testing-interface v1.0.0
+	github.com/mitchellh/go-testing-interface v1.14.1
 	github.com/mitchellh/gox v1.0.1
-	github.com/mitchellh/mapstructure v1.3.3
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/mitchellh/reflectwalk v1.0.1
 	github.com/mongodb/go-client-mongodb-atlas v0.1.2
 	github.com/natefinch/atomic v0.0.0-20200526193002-18c0533a5b09
@@ -138,7 +138,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.2.0
 	github.com/sethvargo/go-limiter v0.3.0
 	github.com/shirou/gopsutil v2.20.6-0.20200630091542-01afd763e6c0+incompatible
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.8.1
 	github.com/tidwall/pretty v1.0.1 // indirect
 	github.com/ulikunitz/xz v0.5.7 // indirect
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
@@ -148,11 +148,10 @@ require (
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200425165423-262c93980547
 	go.mongodb.org/mongo-driver v1.2.1
 	go.uber.org/atomic v1.6.0
-	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
-	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
+	golang.org/x/crypto v0.1.0
+	golang.org/x/net v0.1.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
-	golang.org/x/tools v0.0.0-20200521155704-91d71f6c2f04
+	golang.org/x/tools v0.2.0
 	google.golang.org/api v0.29.0
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.25.0

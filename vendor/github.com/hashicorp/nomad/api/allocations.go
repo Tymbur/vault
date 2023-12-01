@@ -1,24 +1,21 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
-	"net"
 	"sort"
-	"strconv"
-	"sync"
+	"strings"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 var (
 	// NodeDownErr marks an operation as not able to complete since the node is
 	// down.
-	NodeDownErr = fmt.Errorf("node down")
+	NodeDownErr = errors.New("node down")
 )
 
 const (
@@ -33,6 +30,11 @@ const (
 	AllocClientStatusComplete = "complete"
 	AllocClientStatusFailed   = "failed"
 	AllocClientStatusLost     = "lost"
+	AllocClientStatusUnknown  = "unknown"
+)
+
+const (
+	AllocRestartReasonWithinPolicy = "Restart within policy"
 )
 
 // Allocations is used to query the alloc-related endpoints.
@@ -74,233 +76,82 @@ func (a *Allocations) Info(allocID string, q *QueryOptions) (*Allocation, *Query
 // the task environment.
 //
 // The parameters are:
-// * ctx: context to set deadlines or timeout
-// * allocation: the allocation to execute command inside
-// * task: the task's name to execute command in
-// * tty: indicates whether to start a pseudo-tty for the command
-// * stdin, stdout, stderr: the std io to pass to command.
-//      If tty is true, then streams need to point to a tty that's alive for the whole process
-// * terminalSizeCh: A channel to send new tty terminal sizes
+//   - ctx: context to set deadlines or timeout
+//   - allocation: the allocation to execute command inside
+//   - task: the task's name to execute command in
+//   - tty: indicates whether to start a pseudo-tty for the command
+//   - stdin, stdout, stderr: the std io to pass to command.
+//     If tty is true, then streams need to point to a tty that's alive for the whole process
+//   - terminalSizeCh: A channel to send new tty terminal sizes
 //
 // The call blocks until command terminates (or an error occurs), and returns the exit code.
+//
+// Note: for cluster topologies where API consumers don't have network access to
+// Nomad clients, set api.ClientConnTimeout to a small value (ex 1ms) to avoid
+// long pauses on this API call.
 func (a *Allocations) Exec(ctx context.Context,
 	alloc *Allocation, task string, tty bool, command []string,
 	stdin io.Reader, stdout, stderr io.Writer,
 	terminalSizeCh <-chan TerminalSize, q *QueryOptions) (exitCode int, err error) {
 
-	ctx, cancelFn := context.WithCancel(ctx)
-	defer cancelFn()
+	s := &execSession{
+		client:  a.client,
+		alloc:   alloc,
+		task:    task,
+		tty:     tty,
+		command: command,
 
-	errCh := make(chan error, 4)
+		stdin:  stdin,
+		stdout: stdout,
+		stderr: stderr,
 
-	sender, output := a.execFrames(ctx, alloc, task, tty, command, errCh, q)
-
-	select {
-	case err := <-errCh:
-		return -2, err
-	default:
+		terminalSizeCh: terminalSizeCh,
+		q:              q,
 	}
 
-	// Errors resulting from sending input (in goroutines) are silently dropped.
-	// To mitigate this, extra care is needed to distinguish between actual send errors
-	// and from send errors due to command terminating and our race to detect failures.
-	// If we have an actual network failure or send a bad input, we'd get an
-	// error in the reading side of websocket.
-
-	go func() {
-
-		bytes := make([]byte, 2048)
-		for {
-			if ctx.Err() != nil {
-				return
-			}
-
-			input := ExecStreamingInput{Stdin: &ExecStreamingIOOperation{}}
-
-			n, err := stdin.Read(bytes)
-
-			// always send data if we read some
-			if n != 0 {
-				input.Stdin.Data = bytes[:n]
-				sender(&input)
-			}
-
-			// then handle error
-			if err == io.EOF {
-				// if n != 0, send data and we'll get n = 0 on next read
-				if n == 0 {
-					input.Stdin.Close = true
-					sender(&input)
-					return
-				}
-			} else if err != nil {
-				errCh <- err
-				return
-			}
-		}
-	}()
-
-	// forwarding terminal size
-	go func() {
-		for {
-			resizeInput := ExecStreamingInput{}
-
-			select {
-			case <-ctx.Done():
-				return
-			case size, ok := <-terminalSizeCh:
-				if !ok {
-					return
-				}
-				resizeInput.TTYSize = &size
-				sender(&resizeInput)
-			}
-
-		}
-	}()
-
-	// send a heartbeat every 10 seconds
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			// heartbeat message
-			case <-time.After(10 * time.Second):
-				sender(&execStreamingInputHeartbeat)
-			}
-
-		}
-	}()
-
-	for {
-		select {
-		case err := <-errCh:
-			// drop websocket code, not relevant to user
-			if wsErr, ok := err.(*websocket.CloseError); ok && wsErr.Text != "" {
-				return -2, errors.New(wsErr.Text)
-			}
-			return -2, err
-		case <-ctx.Done():
-			return -2, ctx.Err()
-		case frame, ok := <-output:
-			if !ok {
-				return -2, errors.New("disconnected without receiving the exit code")
-			}
-
-			switch {
-			case frame.Stdout != nil:
-				if len(frame.Stdout.Data) != 0 {
-					stdout.Write(frame.Stdout.Data)
-				}
-				// don't really do anything if stdout is closing
-			case frame.Stderr != nil:
-				if len(frame.Stderr.Data) != 0 {
-					stderr.Write(frame.Stderr.Data)
-				}
-				// don't really do anything if stderr is closing
-			case frame.Exited && frame.Result != nil:
-				return frame.Result.ExitCode, nil
-			default:
-				// noop - heartbeat
-			}
-		}
-	}
+	return s.run(ctx)
 }
 
-func (a *Allocations) execFrames(ctx context.Context, alloc *Allocation, task string, tty bool, command []string,
-	errCh chan<- error, q *QueryOptions) (sendFn func(*ExecStreamingInput) error, output <-chan *ExecStreamingOutput) {
-	nodeClient, _ := a.client.GetNodeClientWithTimeout(alloc.NodeID, ClientConnTimeout, q)
-
-	if q == nil {
-		q = &QueryOptions{}
-	}
-	if q.Params == nil {
-		q.Params = make(map[string]string)
-	}
-
-	commandBytes, err := json.Marshal(command)
-	if err != nil {
-		errCh <- fmt.Errorf("failed to marshal command: %s", err)
-		return nil, nil
-	}
-
-	q.Params["tty"] = strconv.FormatBool(tty)
-	q.Params["task"] = task
-	q.Params["command"] = string(commandBytes)
-
-	reqPath := fmt.Sprintf("/v1/client/allocation/%s/exec", alloc.ID)
-
-	var conn *websocket.Conn
-
-	if nodeClient != nil {
-		conn, _, err = nodeClient.websocket(reqPath, q)
-		if _, ok := err.(net.Error); err != nil && !ok {
-			errCh <- err
-			return nil, nil
-		}
-	}
-
-	if conn == nil {
-		conn, _, err = a.client.websocket(reqPath, q)
-		if err != nil {
-			errCh <- err
-			return nil, nil
-		}
-	}
-
-	// Create the output channel
-	frames := make(chan *ExecStreamingOutput, 10)
-
-	go func() {
-		defer conn.Close()
-		for ctx.Err() == nil {
-
-			// Decode the next frame
-			var frame ExecStreamingOutput
-			err := conn.ReadJSON(&frame)
-			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-				close(frames)
-				return
-			} else if err != nil {
-				errCh <- err
-				return
-			}
-
-			frames <- &frame
-		}
-	}()
-
-	var sendLock sync.Mutex
-	send := func(v *ExecStreamingInput) error {
-		sendLock.Lock()
-		defer sendLock.Unlock()
-
-		return conn.WriteJSON(v)
-	}
-
-	return send, frames
-
-}
-
+// Stats gets allocation resource usage statistics about an allocation.
+//
+// Note: for cluster topologies where API consumers don't have network access to
+// Nomad clients, set api.ClientConnTimeout to a small value (ex 1ms) to avoid
+// long pauses on this API call.
 func (a *Allocations) Stats(alloc *Allocation, q *QueryOptions) (*AllocResourceUsage, error) {
 	var resp AllocResourceUsage
-	path := fmt.Sprintf("/v1/client/allocation/%s/stats", alloc.ID)
-	_, err := a.client.query(path, &resp, q)
+	_, err := a.client.query("/v1/client/allocation/"+alloc.ID+"/stats", &resp, q)
 	return &resp, err
 }
 
-func (a *Allocations) GC(alloc *Allocation, q *QueryOptions) error {
-	nodeClient, err := a.client.GetNodeClient(alloc.NodeID, q)
-	if err != nil {
-		return err
-	}
+// Checks gets status information for nomad service checks that exist in the allocation.
+//
+// Note: for cluster topologies where API consumers don't have network access to
+// Nomad clients, set api.ClientConnTimeout to a small value (ex 1ms) to avoid
+// long pauses on this API call.
+func (a *Allocations) Checks(allocID string, q *QueryOptions) (AllocCheckStatuses, error) {
+	var resp AllocCheckStatuses
+	_, err := a.client.query("/v1/client/allocation/"+allocID+"/checks", &resp, q)
+	return resp, err
+}
 
+// GC forces a garbage collection of client state for an allocation.
+//
+// Note: for cluster topologies where API consumers don't have network access to
+// Nomad clients, set api.ClientConnTimeout to a small value (ex 1ms) to avoid
+// long pauses on this API call.
+func (a *Allocations) GC(alloc *Allocation, q *QueryOptions) error {
 	var resp struct{}
-	_, err = nodeClient.query("/v1/client/allocation/"+alloc.ID+"/gc", &resp, nil)
+	_, err := a.client.query("/v1/client/allocation/"+alloc.ID+"/gc", &resp, nil)
 	return err
 }
 
+// Restart restarts the tasks that are currently running or a specific task if
+// taskName is provided. An error is returned if the task to be restarted is
+// not running.
+//
+// Note: for cluster topologies where API consumers don't have network access to
+// Nomad clients, set api.ClientConnTimeout to a small value (ex 1ms) to avoid
+// long pauses on this API call.
 func (a *Allocations) Restart(alloc *Allocation, taskName string, q *QueryOptions) error {
 	req := AllocationRestartRequest{
 		TaskName: taskName,
@@ -311,9 +162,52 @@ func (a *Allocations) Restart(alloc *Allocation, taskName string, q *QueryOption
 	return err
 }
 
+// RestartAllTasks restarts all tasks in the allocation, regardless of
+// lifecycle type or state. Tasks will restart following their lifecycle order.
+//
+// Note: for cluster topologies where API consumers don't have network access to
+// Nomad clients, set api.ClientConnTimeout to a small value (ex 1ms) to avoid
+// long pauses on this API call.
+//
+// DEPRECATED: This method will be removed in 1.6.0
+func (a *Allocations) RestartAllTasks(alloc *Allocation, q *QueryOptions) error {
+	req := AllocationRestartRequest{
+		AllTasks: true,
+	}
+
+	var resp struct{}
+	_, err := a.client.putQuery("/v1/client/allocation/"+alloc.ID+"/restart", &req, &resp, q)
+	return err
+}
+
+// Stop stops an allocation.
+//
+// Note: for cluster topologies where API consumers don't have network access to
+// Nomad clients, set api.ClientConnTimeout to a small value (ex 1ms) to avoid
+// long pauses on this API call.
+//
+// BREAKING: This method will have the following signature in 1.6.0
+// func (a *Allocations) Stop(allocID string, w *WriteOptions) (*AllocStopResponse, error) {
 func (a *Allocations) Stop(alloc *Allocation, q *QueryOptions) (*AllocStopResponse, error) {
+	// COMPAT: Remove in 1.6.0
+	var w *WriteOptions
+	if q != nil {
+		w = &WriteOptions{
+			Region:    q.Region,
+			Namespace: q.Namespace,
+			AuthToken: q.AuthToken,
+			Headers:   q.Headers,
+			ctx:       q.ctx,
+		}
+	}
+
 	var resp AllocStopResponse
-	_, err := a.client.putQuery("/v1/allocation/"+alloc.ID+"/stop", nil, &resp, q)
+	wm, err := a.client.put("/v1/allocation/"+alloc.ID+"/stop", nil, &resp, w)
+	if wm != nil {
+		resp.LastIndex = wm.LastIndex
+		resp.RequestTime = wm.RequestTime
+	}
+
 	return &resp, err
 }
 
@@ -325,20 +219,28 @@ type AllocStopResponse struct {
 	WriteMeta
 }
 
+// Signal sends a signal to the allocation.
+//
+// Note: for cluster topologies where API consumers don't have network access to
+// Nomad clients, set api.ClientConnTimeout to a small value (ex 1ms) to avoid
+// long pauses on this API call.
 func (a *Allocations) Signal(alloc *Allocation, q *QueryOptions, task, signal string) error {
-	nodeClient, err := a.client.GetNodeClient(alloc.NodeID, q)
-	if err != nil {
-		return err
-	}
-
 	req := AllocSignalRequest{
 		Signal: signal,
 		Task:   task,
 	}
 
 	var resp GenericResponse
-	_, err = nodeClient.putQuery("/v1/client/allocation/"+alloc.ID+"/signal", &req, &resp, q)
+	_, err := a.client.putQuery("/v1/client/allocation/"+alloc.ID+"/signal", &req, &resp, q)
 	return err
+}
+
+// Services is used to return a list of service registrations associated to the
+// specified allocID.
+func (a *Allocations) Services(allocID string, q *QueryOptions) ([]*ServiceRegistration, *QueryMeta, error) {
+	var resp []*ServiceRegistration
+	qm, err := a.client.query("/v1/allocation/"+allocID+"/services", &resp, q)
+	return resp, qm, err
 }
 
 // Allocation is used for serialization of allocations.
@@ -369,6 +271,7 @@ type Allocation struct {
 	PreviousAllocation    string
 	NextAllocation        string
 	RescheduleTracker     *RescheduleTracker
+	NetworkStatus         *AllocNetworkStatus
 	PreemptedAllocations  []string
 	PreemptedByAllocation string
 	CreateIndex           uint64
@@ -382,6 +285,7 @@ type Allocation struct {
 type AllocationMetric struct {
 	NodesEvaluated     int
 	NodesFiltered      int
+	NodesInPool        int
 	NodesAvailable     map[string]int
 	ClassFiltered      map[string]int
 	ConstraintFiltered map[string]int
@@ -389,6 +293,7 @@ type AllocationMetric struct {
 	ClassExhausted     map[string]int
 	DimensionExhausted map[string]int
 	QuotaExhausted     []string
+	ResourcesExhausted map[string]*Resources
 	// Deprecated, replaced with ScoreMetaData
 	Scores            map[string]float64
 	AllocationTime    time.Duration
@@ -404,6 +309,64 @@ type NodeScoreMeta struct {
 	NormScore float64
 }
 
+// Stub returns a list stub for the allocation
+func (a *Allocation) Stub() *AllocationListStub {
+	stub := &AllocationListStub{
+		ID:                    a.ID,
+		EvalID:                a.EvalID,
+		Name:                  a.Name,
+		Namespace:             a.Namespace,
+		NodeID:                a.NodeID,
+		NodeName:              a.NodeName,
+		JobID:                 a.JobID,
+		TaskGroup:             a.TaskGroup,
+		DesiredStatus:         a.DesiredStatus,
+		DesiredDescription:    a.DesiredDescription,
+		ClientStatus:          a.ClientStatus,
+		ClientDescription:     a.ClientDescription,
+		TaskStates:            a.TaskStates,
+		DeploymentStatus:      a.DeploymentStatus,
+		FollowupEvalID:        a.FollowupEvalID,
+		NextAllocation:        a.NextAllocation,
+		RescheduleTracker:     a.RescheduleTracker,
+		PreemptedAllocations:  a.PreemptedAllocations,
+		PreemptedByAllocation: a.PreemptedByAllocation,
+		CreateIndex:           a.CreateIndex,
+		ModifyIndex:           a.ModifyIndex,
+		CreateTime:            a.CreateTime,
+		ModifyTime:            a.ModifyTime,
+	}
+
+	if a.Job != nil {
+		stub.JobType = *a.Job.Type
+		stub.JobVersion = *a.Job.Version
+	}
+
+	return stub
+}
+
+// ServerTerminalStatus returns true if the desired state of the allocation is
+// terminal.
+func (a *Allocation) ServerTerminalStatus() bool {
+	switch a.DesiredStatus {
+	case AllocDesiredStatusStop, AllocDesiredStatusEvict:
+		return true
+	default:
+		return false
+	}
+}
+
+// ClientTerminalStatus returns true if the client status is terminal and will
+// therefore no longer transition.
+func (a *Allocation) ClientTerminalStatus() bool {
+	switch a.ClientStatus {
+	case AllocClientStatusComplete, AllocClientStatusFailed, AllocClientStatusLost:
+		return true
+	default:
+		return false
+	}
+}
+
 // AllocationListStub is used to return a subset of an allocation
 // during list operations.
 type AllocationListStub struct {
@@ -417,6 +380,7 @@ type AllocationListStub struct {
 	JobType               string
 	JobVersion            uint64
 	TaskGroup             string
+	AllocatedResources    *AllocatedResources `json:",omitempty"`
 	DesiredStatus         string
 	DesiredDescription    string
 	ClientStatus          string
@@ -424,6 +388,7 @@ type AllocationListStub struct {
 	TaskStates            map[string]*TaskState
 	DeploymentStatus      *AllocDeploymentStatus
 	FollowupEvalID        string
+	NextAllocation        string
 	RescheduleTracker     *RescheduleTracker
 	PreemptedAllocations  []string
 	PreemptedByAllocation string
@@ -443,6 +408,15 @@ type AllocDeploymentStatus struct {
 	ModifyIndex uint64
 }
 
+// AllocNetworkStatus captures the status of an allocation's network during runtime.
+// Depending on the network mode, an allocation's address may need to be known to other
+// systems in Nomad such as service registration.
+type AllocNetworkStatus struct {
+	InterfaceName string
+	Address       string
+	DNS           *DNSConfig
+}
+
 type AllocatedResources struct {
 	Tasks  map[string]*AllocatedTaskResources
 	Shared AllocatedSharedResources
@@ -452,11 +426,20 @@ type AllocatedTaskResources struct {
 	Cpu      AllocatedCpuResources
 	Memory   AllocatedMemoryResources
 	Networks []*NetworkResource
+	Devices  []*AllocatedDeviceResource
 }
 
 type AllocatedSharedResources struct {
 	DiskMB   int64
 	Networks []*NetworkResource
+	Ports    []PortMapping
+}
+
+type PortMapping struct {
+	Label  string
+	Value  int
+	To     int
+	HostIP string
 }
 
 type AllocatedCpuResources struct {
@@ -464,7 +447,15 @@ type AllocatedCpuResources struct {
 }
 
 type AllocatedMemoryResources struct {
-	MemoryMB int64
+	MemoryMB    int64
+	MemoryMaxMB int64
+}
+
+type AllocatedDeviceResource struct {
+	Vendor    string
+	Type      string
+	Name      string
+	DeviceIDs []string
 }
 
 // AllocIndexSort reverse sorts allocs by CreateIndex.
@@ -482,18 +473,23 @@ func (a AllocIndexSort) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
 
+func (a Allocation) GetTaskGroup() *TaskGroup {
+	for _, tg := range a.Job.TaskGroups {
+		if *tg.Name == a.TaskGroup {
+			return tg
+		}
+	}
+	return nil
+}
+
 // RescheduleInfo is used to calculate remaining reschedule attempts
 // according to the given time and the task groups reschedule policy
 func (a Allocation) RescheduleInfo(t time.Time) (int, int) {
-	var reschedulePolicy *ReschedulePolicy
-	for _, tg := range a.Job.TaskGroups {
-		if *tg.Name == a.TaskGroup {
-			reschedulePolicy = tg.ReschedulePolicy
-		}
-	}
-	if reschedulePolicy == nil {
+	tg := a.GetTaskGroup()
+	if tg == nil || tg.ReschedulePolicy == nil {
 		return 0, 0
 	}
+	reschedulePolicy := tg.ReschedulePolicy
 	availableAttempts := *reschedulePolicy.Attempts
 	interval := *reschedulePolicy.Interval
 	attempted := 0
@@ -513,6 +509,7 @@ func (a Allocation) RescheduleInfo(t time.Time) (int, int) {
 
 type AllocationRestartRequest struct {
 	TaskName string
+	AllTasks bool
 }
 
 type AllocSignalRequest struct {
@@ -583,12 +580,12 @@ type ExecStreamingInput struct {
 	TTYSize *TerminalSize             `json:"tty_size,omitempty"`
 }
 
-// ExecStreamingExitResults captures the exit code of just completed nomad exec command
+// ExecStreamingExitResult captures the exit code of just completed nomad exec command
 type ExecStreamingExitResult struct {
 	ExitCode int `json:"exit_code"`
 }
 
-// ExecStreamingInput represents an output streaming entity, e.g. stdout/stderr update or termination
+// ExecStreamingOutput represents an output streaming entity, e.g. stdout/stderr update or termination
 //
 // At most one of these fields should be set: `Stdout`, `Stderr`, or `Result`.
 // If `Exited` is true, then `Result` is non-nil, and other fields are nil.
@@ -598,4 +595,13 @@ type ExecStreamingOutput struct {
 
 	Exited bool                     `json:"exited,omitempty"`
 	Result *ExecStreamingExitResult `json:"result,omitempty"`
+}
+
+func AllocSuffix(name string) string {
+	idx := strings.LastIndex(name, "[")
+	if idx == -1 {
+		return ""
+	}
+	suffix := name[idx:]
+	return suffix
 }
