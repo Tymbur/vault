@@ -33,7 +33,7 @@ require (
 	github.com/coreos/go-semver v0.2.0
 	github.com/denisenkom/go-mssqldb v0.0.0-20200910202707-1e08a3fab204
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
-	github.com/docker/docker v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
+	github.com/docker/docker v20.10.27+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/duosecurity/duo_api_golang v0.0.0-20200922135234-a7aeb2c50f60
@@ -151,7 +151,6 @@ require (
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	golang.org/x/tools v0.0.0-20200521155704-91d71f6c2f04
 	google.golang.org/api v0.29.0
 	google.golang.org/grpc v1.29.1

@@ -11,7 +11,7 @@ require (
 	github.com/containerd/containerd v1.3.4 // indirect
 	github.com/containerd/continuity v0.0.0-20200709052629-daa8e1ccc0bc // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v1.4.2-0.20200319182547-c7ad2b866182
+	github.com/docker/docker v20.10.27+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/fatih/structs v1.1.0
 	github.com/frankban/quicktest v1.10.0 // indirect
@@ -39,6 +39,7 @@ require (
 	github.com/mitchellh/copystructure v1.0.0
 	github.com/mitchellh/go-testing-interface v1.0.0
 	github.com/mitchellh/mapstructure v1.3.2
+	github.com/moby/sys/mount v0.3.3 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
@@ -48,7 +49,7 @@ require (
 	github.com/ryanuber/go-glob v1.0.0
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
-	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980
+	golang.org/x/sys v0.15.0
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.25.0
