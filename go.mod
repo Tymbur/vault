@@ -48,7 +48,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-test/deep v1.0.3
 	github.com/gocql/gocql v0.0.0-20200624222514-34081eda590e
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.5.0
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-metrics-stackdriver v0.2.0
 	github.com/hashicorp/consul-template v0.25.1
@@ -155,7 +155,7 @@ require (
 	golang.org/x/tools v0.0.0-20200521155704-91d71f6c2f04
 	google.golang.org/api v0.29.0
 	google.golang.org/grpc v1.29.1
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.33.0
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce
 	gopkg.in/ory-am/dockertest.v3 v3.3.4
 	gopkg.in/square/go-jose.v2 v2.5.1
