@@ -22,7 +22,7 @@
 
 package fdb
 
-// #define FDB_API_VERSION 700
+// #define FDB_API_VERSION 740
 // #include <foundationdb/fdb_c.h>
 import "C"
 
@@ -41,6 +41,7 @@ type ReadTransaction interface {
 	Snapshot() Snapshot
 	GetEstimatedRangeSizeBytes(r ExactRange) FutureInt64
 	GetRangeSplitPoints(r ExactRange, chunkSize int64) FutureKeyArray
+	Options() TransactionOptions
 
 	ReadTransactor
 }
