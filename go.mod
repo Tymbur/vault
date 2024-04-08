@@ -36,7 +36,7 @@ require (
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/dsnet/compress v0.0.1 // indirect
-	github.com/duosecurity/duo_api_golang v0.0.0-20200922135234-a7aeb2c50f60
+	github.com/duosecurity/duo_api_golang v0.0.0-20240408132100-cb1770897e66
 	github.com/elazarl/go-bindata-assetfs v1.0.1-0.20200509193318-234c15e7648f
 	github.com/fatih/color v1.9.0
 	github.com/fatih/structs v1.1.0
