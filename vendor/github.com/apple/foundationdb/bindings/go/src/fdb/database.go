@@ -22,14 +22,13 @@
 
 package fdb
 
-// #define FDB_API_VERSION 700
+// #define FDB_API_VERSION 740
 // #include <foundationdb/fdb_c.h>
 import "C"
 
 import (
+	"errors"
 	"runtime"
-
-	"golang.org/x/xerrors"
 )
 
 // Database is a handle to a FoundationDB database. Database is a lightweight
@@ -41,6 +40,12 @@ import (
 // usually created and committed automatically by the (Database).Transact
 // method.
 type Database struct {
+	// String reference to the cluster file.
+	clusterFile string
+	// This variable is to track if we have to remove the database from the cached
+	// database structs. We can't use clusterFile alone, since the default clusterFile
+	// would be an empty string.
+	isCached bool
 	*database
 }
 
@@ -55,6 +60,18 @@ type DatabaseOptions struct {
 	d *database
 }
 
+// Close will close the Database and clean up all resources.
+// You have to ensure that you're not resuing this database.
+func (d *Database) Close() {
+	// Remove database object from the cached databases
+	if d.isCached {
+		openDatabases.Delete(d.clusterFile)
+	}
+
+	// Destroy the database
+	d.destroy()
+}
+
 func (opt DatabaseOptions) setOpt(code int, param []byte) error {
 	return setOpt(func(p *C.uint8_t, pl C.int) C.fdb_error_t {
 		return C.fdb_database_set_option(opt.d.ptr, C.FDBDatabaseOption(code), p, pl)
@@ -62,6 +79,10 @@ func (opt DatabaseOptions) setOpt(code int, param []byte) error {
 }
 
 func (d *database) destroy() {
+	if d.ptr == nil {
+		return
+	}
+
 	C.fdb_database_destroy(d.ptr)
 }
 
@@ -82,6 +103,32 @@ func (d Database) CreateTransaction() (Transaction, error) {
 	return Transaction{t}, nil
 }
 
+// RebootWorker is a wrapper around fdb_database_reboot_worker and allows to reboot processes
+// from the go bindings. If a suspendDuration > 0 is provided the rebooted process will be
+// suspended for suspendDuration seconds. If checkFile is set to true the process will check
+// if the data directory is writeable by creating a validation file. The address must be a
+// process address is the form of IP:Port pair.
+func (d Database) RebootWorker(address string, checkFile bool, suspendDuration int) error {
+	t := &futureInt64{
+		future: newFuture(C.fdb_database_reboot_worker(
+			d.ptr,
+			byteSliceToPtr([]byte(address)),
+			C.int(len(address)),
+			C.fdb_bool_t(boolToInt(checkFile)),
+			C.int(suspendDuration),
+		),
+		),
+	}
+
+	dbVersion, err := t.Get()
+
+	if dbVersion == 0 {
+		return errors.New("failed to send reboot process request")
+	}
+
+	return err
+}
+
 func retryable(wrapped func() (interface{}, error), onError func(Error) FutureNil) (ret interface{}, e error) {
 	for {
 		ret, e = wrapped()
@@ -94,7 +141,7 @@ func retryable(wrapped func() (interface{}, error), onError func(Error) FutureNi
 		// Check if the error chain contains an
 		// fdb.Error
 		var ep Error
-		if xerrors.As(e, &ep) {
+		if errors.As(e, &ep) {
 			e = onError(ep).Get()
 		}
 
@@ -118,8 +165,7 @@ func retryable(wrapped func() (interface{}, error), onError func(Error) FutureNi
 // error.
 //
 // The transaction is retried if the error is or wraps a retryable Error.
-// The error is unwrapped with the xerrors.Wrapper. See https://godoc.org/golang.org/x/xerrors#Wrapper
-// for details.
+// The error is unwrapped.
 //
 // Do not return Future objects from the function provided to Transact. The
 // Transaction created by Transact may be finalized at any point after Transact
@@ -162,8 +208,7 @@ func (d Database) Transact(f func(Transaction) (interface{}, error)) (interface{
 // transaction or return the error.
 //
 // The transaction is retried if the error is or wraps a retryable Error.
-// The error is unwrapped with the xerrors.Wrapper. See https://godoc.org/golang.org/x/xerrors#Wrapper
-// for details.
+// The error is unwrapped.
 //
 // Do not return Future objects from the function provided to ReadTransact. The
 // Transaction created by ReadTransact may be finalized at any point after

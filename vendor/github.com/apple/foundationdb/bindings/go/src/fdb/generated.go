@@ -102,6 +102,23 @@ func (o NetworkOptions) SetTraceFileIdentifier(param string) error {
 	return o.setOpt(36, []byte(param))
 }
 
+// Use the same base trace file name for all client threads as it did before version 7.2. The current default behavior is to use distinct trace file names for client threads by including their version and thread index.
+func (o NetworkOptions) SetTraceShareAmongClientThreads() error {
+	return o.setOpt(37, nil)
+}
+
+// Initialize trace files on network setup, determine the local IP later. Otherwise tracing is initialized when opening the first database.
+func (o NetworkOptions) SetTraceInitializeOnSetup() error {
+	return o.setOpt(38, nil)
+}
+
+// Set file suffix for partially written log files.
+//
+// Parameter: Append this suffix to partially written log files. When a log file is complete, it is renamed to remove the suffix. No separator is added between the file and the suffix. If you want to add a file extension, you should include the separator - e.g. '.tmp' instead of 'tmp' to add the 'tmp' extension.
+func (o NetworkOptions) SetTracePartialFileSuffix(param string) error {
+	return o.setOpt(39, []byte(param))
+}
+
 // Set internal tuning or debugging knobs
 //
 // Parameter: knob_name=knob_value
@@ -196,6 +213,11 @@ func (o NetworkOptions) SetTLSPassword(param string) error {
 	return o.setOpt(54, []byte(param))
 }
 
+// Prevent client from connecting to a non-TLS endpoint by throwing network connection failed error.
+func (o NetworkOptions) SetTLSDisablePlaintextConnection() error {
+	return o.setOpt(55, nil)
+}
+
 // Disables the multi-version client API and instead uses the local client directly. Must be set before setting up the network.
 func (o NetworkOptions) SetDisableMultiVersionClientApi() error {
 	return o.setOpt(60, nil)
@@ -220,9 +242,38 @@ func (o NetworkOptions) SetExternalClientDirectory(param string) error {
 	return o.setOpt(63, []byte(param))
 }
 
-// Prevents connections through the local client, allowing only connections through externally loaded client libraries. Intended primarily for testing.
+// Prevents connections through the local client, allowing only connections through externally loaded client libraries.
 func (o NetworkOptions) SetDisableLocalClient() error {
 	return o.setOpt(64, nil)
+}
+
+// Spawns multiple worker threads for each version of the client that is loaded.  Setting this to a number greater than one implies disable_local_client.
+//
+// Parameter: Number of client threads to be spawned.  Each cluster will be serviced by a single client thread.
+func (o NetworkOptions) SetClientThreadsPerVersion(param int64) error {
+	return o.setOpt(65, int64ToBytes(param))
+}
+
+// Adds an external client library to be used with a future version protocol. This option can be used testing purposes only!
+//
+// Parameter: path to client library
+func (o NetworkOptions) SetFutureVersionClientLibrary(param string) error {
+	return o.setOpt(66, []byte(param))
+}
+
+// Retain temporary external client library copies that are created for enabling multi-threading.
+func (o NetworkOptions) SetRetainClientLibraryCopies() error {
+	return o.setOpt(67, nil)
+}
+
+// Ignore the failure to initialize some of the external clients
+func (o NetworkOptions) SetIgnoreExternalClientFailures() error {
+	return o.setOpt(68, nil)
+}
+
+// Fail with an error if there is no client matching the server version the client is connecting to
+func (o NetworkOptions) SetFailIncompatibleClient() error {
+	return o.setOpt(69, nil)
 }
 
 // Disables logging of client statistics, such as sampled transaction activity.
@@ -238,6 +289,11 @@ func (o NetworkOptions) SetEnableSlowTaskProfiling() error {
 // Enables debugging feature to perform run loop profiling. Requires trace logging to be enabled. WARNING: this feature is not recommended for use in production.
 func (o NetworkOptions) SetEnableRunLoopProfiling() error {
 	return o.setOpt(71, nil)
+}
+
+// Prevents the multi-version client API from being disabled, even if no external clients are configured. This option is required to use GRV caching.
+func (o NetworkOptions) SetDisableClientBypass() error {
+	return o.setOpt(72, nil)
 }
 
 // Enable client buggify - will make requests randomly fail (intended for client testing)
@@ -262,6 +318,20 @@ func (o NetworkOptions) SetClientBuggifySectionActivatedProbability(param int64)
 // Parameter: probability expressed as a percentage between 0 and 100
 func (o NetworkOptions) SetClientBuggifySectionFiredProbability(param int64) error {
 	return o.setOpt(83, int64ToBytes(param))
+}
+
+// Set a tracer to run on the client. Should be set to the same value as the tracer set on the server.
+//
+// Parameter: Distributed tracer type. Choose from none, log_file, or network_lossy
+func (o NetworkOptions) SetDistributedClientTracer(param string) error {
+	return o.setOpt(90, []byte(param))
+}
+
+// Sets the directory for storing temporary files created by FDB client, such as temporary copies of client libraries. Defaults to /tmp
+//
+// Parameter: Client directory for temporary files. 
+func (o NetworkOptions) SetClientTmpDir(param string) error {
+	return o.setOpt(91, []byte(param))
 }
 
 // Set the size of the client location cache. Raising this value can boost performance in very large databases where clients access data in a near-random pattern. Defaults to 100000.
@@ -342,9 +412,41 @@ func (o DatabaseOptions) SetTransactionCausalReadRisky() error {
 	return o.setOpt(504, nil)
 }
 
-// Addresses returned by get_addresses_for_key include the port when enabled. As of api version 630, this option is enabled by default and setting this has no effect.
+// Deprecated. Addresses returned by get_addresses_for_key include the port when enabled. As of api version 630, this option is enabled by default and setting this has no effect.
 func (o DatabaseOptions) SetTransactionIncludePortInAddress() error {
 	return o.setOpt(505, nil)
+}
+
+// Set a random idempotency id for all transactions. See the transaction option description for more information. This feature is in development and not ready for general use.
+func (o DatabaseOptions) SetTransactionAutomaticIdempotency() error {
+	return o.setOpt(506, nil)
+}
+
+// Allows ``get`` operations to read from sections of keyspace that have become unreadable because of versionstamp operations. This sets the ``bypass_unreadable`` option of each transaction created by this database. See the transaction option description for more information.
+func (o DatabaseOptions) SetTransactionBypassUnreadable() error {
+	return o.setOpt(700, nil)
+}
+
+// By default, operations that are performed on a transaction while it is being committed will not only fail themselves, but they will attempt to fail other in-flight operations (such as the commit) as well. This behavior is intended to help developers discover situations where operations could be unintentionally executed after the transaction has been reset. Setting this option removes that protection, causing only the offending operation to fail.
+func (o DatabaseOptions) SetTransactionUsedDuringCommitProtectionDisable() error {
+	return o.setOpt(701, nil)
+}
+
+// Enables conflicting key reporting on all transactions, allowing them to retrieve the keys that are conflicting with other transactions.
+func (o DatabaseOptions) SetTransactionReportConflictingKeys() error {
+	return o.setOpt(702, nil)
+}
+
+// Use configuration database.
+func (o DatabaseOptions) SetUseConfigDatabase() error {
+	return o.setOpt(800, nil)
+}
+
+// Enables verification of causal read risky by checking whether clients are able to read stale data when they detect a recovery, and logging an error if so.
+//
+// Parameter: integer between 0 and 100 expressing the probability a client will verify it can't read stale data
+func (o DatabaseOptions) SetTestCausalReadRisky(param int64) error {
+	return o.setOpt(900, int64ToBytes(param))
 }
 
 // The transaction, if not self-conflicting, may be committed a second time after commit succeeds, in the event of a fault
@@ -372,7 +474,7 @@ func (o TransactionOptions) SetNextWriteNoWriteConflictRange() error {
 	return o.setOpt(30, nil)
 }
 
-// Reads performed by a transaction will not see any prior mutations that occured in that transaction, instead seeing the value which was in the database at the transaction's read version. This option may provide a small performance benefit for the client, but also disables a number of client-side optimizations which are beneficial for transactions which tend to read and write the same keys within a single transaction.
+// Reads performed by a transaction will not see any prior mutations that occurred in that transaction, instead seeing the value which was in the database at the transaction's read version. This option may provide a small performance benefit for the client, but also disables a number of client-side optimizations which are beneficial for transactions which tend to read and write the same keys within a single transaction. It is an error to set this option after performing any reads or writes on the transaction.
 func (o TransactionOptions) SetReadYourWritesDisable() error {
 	return o.setOpt(51, nil)
 }
@@ -380,6 +482,31 @@ func (o TransactionOptions) SetReadYourWritesDisable() error {
 // Deprecated
 func (o TransactionOptions) SetReadAheadDisable() error {
 	return o.setOpt(52, nil)
+}
+
+// Storage server should cache disk blocks needed for subsequent read requests in this transaction.  This is the default behavior.
+func (o TransactionOptions) SetReadServerSideCacheEnable() error {
+	return o.setOpt(507, nil)
+}
+
+// Storage server should not cache disk blocks needed for subsequent read requests in this transaction.  This can be used to avoid cache pollution for reads not expected to be repeated.
+func (o TransactionOptions) SetReadServerSideCacheDisable() error {
+	return o.setOpt(508, nil)
+}
+
+// Use normal read priority for subsequent read requests in this transaction.  This is the default read priority.
+func (o TransactionOptions) SetReadPriorityNormal() error {
+	return o.setOpt(509, nil)
+}
+
+// Use low read priority for subsequent read requests in this transaction.
+func (o TransactionOptions) SetReadPriorityLow() error {
+	return o.setOpt(510, nil)
+}
+
+// Use high read priority for subsequent read requests in this transaction.
+func (o TransactionOptions) SetReadPriorityHigh() error {
+	return o.setOpt(511, nil)
 }
 
 // Not yet implemented.
@@ -412,14 +539,24 @@ func (o TransactionOptions) SetInitializeNewDatabase() error {
 	return o.setOpt(300, nil)
 }
 
-// Allows this transaction to read and modify system keys (those that start with the byte 0xFF)
+// Allows this transaction to read and modify system keys (those that start with the byte 0xFF). Implies raw_access.
 func (o TransactionOptions) SetAccessSystemKeys() error {
 	return o.setOpt(301, nil)
 }
 
-// Allows this transaction to read system keys (those that start with the byte 0xFF)
+// Allows this transaction to read system keys (those that start with the byte 0xFF). Implies raw_access.
 func (o TransactionOptions) SetReadSystemKeys() error {
 	return o.setOpt(302, nil)
+}
+
+// Allows this transaction to access the raw key-space when tenant mode is on.
+func (o TransactionOptions) SetRawAccess() error {
+	return o.setOpt(303, nil)
+}
+
+// Allows this transaction to bypass storage quota enforcement. Should only be used for transactions that directly or indirectly decrease the size of the tenant group's data.
+func (o TransactionOptions) SetBypassStorageQuota() error {
+	return o.setOpt(304, nil)
 }
 
 // Not yet implemented.
@@ -486,6 +623,11 @@ func (o TransactionOptions) SetSizeLimit(param int64) error {
 	return o.setOpt(503, int64ToBytes(param))
 }
 
+// Automatically assign a random 16 byte idempotency id for this transaction. Prevents commits from failing with ``commit_unknown_result``. WARNING: If you are also using the multiversion client or transaction timeouts, if either cluster_version_changed or transaction_timed_out was thrown during a commit, then that commit may have already succeeded or may succeed in the future. This feature is in development and not ready for general use.
+func (o TransactionOptions) SetAutomaticIdempotency() error {
+	return o.setOpt(505, nil)
+}
+
 // Snapshot read operations will see the results of writes done in the same transaction. This is the default behavior.
 func (o TransactionOptions) SetSnapshotRywEnable() error {
 	return o.setOpt(600, nil)
@@ -521,6 +663,64 @@ func (o TransactionOptions) SetReportConflictingKeys() error {
 	return o.setOpt(712, nil)
 }
 
+// By default, the special key space will only allow users to read from exactly one module (a subspace in the special key space). Use this option to allow reading from zero or more modules. Users who set this option should be prepared for new modules, which may have different behaviors than the modules they're currently reading. For example, a new module might block or return an error.
+func (o TransactionOptions) SetSpecialKeySpaceRelaxed() error {
+	return o.setOpt(713, nil)
+}
+
+// By default, users are not allowed to write to special keys. Enable this option will implicitly enable all options required to achieve the configuration change.
+func (o TransactionOptions) SetSpecialKeySpaceEnableWrites() error {
+	return o.setOpt(714, nil)
+}
+
+// Adds a tag to the transaction that can be used to apply manual targeted throttling. At most 5 tags can be set on a transaction.
+//
+// Parameter: String identifier used to associated this transaction with a throttling group. Must not exceed 16 characters.
+func (o TransactionOptions) SetTag(param string) error {
+	return o.setOpt(800, []byte(param))
+}
+
+// Adds a tag to the transaction that can be used to apply manual or automatic targeted throttling. At most 5 tags can be set on a transaction.
+//
+// Parameter: String identifier used to associated this transaction with a throttling group. Must not exceed 16 characters.
+func (o TransactionOptions) SetAutoThrottleTag(param string) error {
+	return o.setOpt(801, []byte(param))
+}
+
+// Adds a parent to the Span of this transaction. Used for transaction tracing. A span can be identified with any 16 bytes
+//
+// Parameter: A byte string of length 16 used to associate the span of this transaction with a parent
+func (o TransactionOptions) SetSpanParent(param []byte) error {
+	return o.setOpt(900, param)
+}
+
+// Asks storage servers for how many bytes a clear key range contains. Otherwise uses the location cache to roughly estimate this.
+func (o TransactionOptions) SetExpensiveClearCostEstimationEnable() error {
+	return o.setOpt(1000, nil)
+}
+
+// Allows ``get`` operations to read from sections of keyspace that have become unreadable because of versionstamp operations. These reads will view versionstamp operations as if they were set operations that did not fill in the versionstamp.
+func (o TransactionOptions) SetBypassUnreadable() error {
+	return o.setOpt(1100, nil)
+}
+
+// Allows this transaction to use cached GRV from the database context. Defaults to off. Upon first usage, starts a background updater to periodically update the cache to avoid stale read versions. The disable_client_bypass option must also be set.
+func (o TransactionOptions) SetUseGrvCache() error {
+	return o.setOpt(1101, nil)
+}
+
+// Attach given authorization token to the transaction such that subsequent tenant-aware requests are authorized
+//
+// Parameter: A JSON Web Token authorized to access data belonging to one or more tenants, indicated by 'tenants' claim of the token's payload.
+func (o TransactionOptions) SetAuthorizationToken(param string) error {
+	return o.setOpt(2000, []byte(param))
+}
+
+// Enables replica consistency check, which compares the results returned by all storage server replicas for a given read request, in client-side load balancer.
+func (o TransactionOptions) SetEnableReplicaConsistencyCheck() error {
+	return o.setOpt(4000, nil)
+}
+
 type StreamingMode int
 
 const (
@@ -530,23 +730,23 @@ const (
 	StreamingModeWantAll StreamingMode = -1
 
 	// The default. The client doesn't know how much of the range it is likely
-	// to used and wants different performance concerns to be balanced. Only a
-	// small portion of data is transferred to the client initially (in order to
-	// minimize costs if the client doesn't read the entire range), and as the
-	// caller iterates over more items in the range larger batches will be
-	// transferred in order to minimize latency. After enough iterations, the
-	// iterator mode will eventually reach the same byte limit as ``WANT_ALL``
+	// to used and wants different performance concerns to be balanced.
+	// Only a small portion of data is transferred to the client initially (in
+	// order to minimize costs if the client doesn't read the entire range), and
+	// as the caller iterates over more items in the range larger batches will
+	// be transferred in order to minimize latency. After enough iterations,
+	// the iterator mode will eventually reach the same byte limit as “WANT_ALL“
 	StreamingModeIterator StreamingMode = 0
 
 	// Infrequently used. The client has passed a specific row limit and wants
 	// that many rows delivered in a single batch. Because of iterator operation
 	// in client drivers make request batches transparent to the user, consider
-	// ``WANT_ALL`` StreamingMode instead. A row limit must be specified if this
+	// “WANT_ALL“ StreamingMode instead. A row limit must be specified if this
 	// mode is used.
 	StreamingModeExact StreamingMode = 1
 
-	// Infrequently used. Transfer data in batches small enough to not be much
-	// more expensive than reading individual rows, to minimize cost if
+	// Infrequently used. Transfer data in batches small enough to not be
+	// much more expensive than reading individual rows, to minimize cost if
 	// iteration stops early.
 	StreamingModeSmall StreamingMode = 2
 
@@ -554,16 +754,16 @@ const (
 	// large.
 	StreamingModeMedium StreamingMode = 3
 
-	// Infrequently used. Transfer data in batches large enough to be, in a
-	// high-concurrency environment, nearly as efficient as possible. If the
-	// client stops iteration early, some disk and network bandwidth may be
-	// wasted. The batch size may still be too small to allow a single client to
-	// get high throughput from the database, so if that is what you need
+	// Infrequently used. Transfer data in batches large enough to be,
+	// in a high-concurrency environment, nearly as efficient as possible.
+	// If the client stops iteration early, some disk and network bandwidth may
+	// be wasted. The batch size may still be too small to allow a single client
+	// to get high throughput from the database, so if that is what you need
 	// consider the SERIAL StreamingMode.
 	StreamingModeLarge StreamingMode = 4
 
-	// Transfer data in batches large enough that an individual client can get
-	// reasonable read bandwidth from the database. If the client stops
+	// Transfer data in batches large enough that an individual client can
+	// get reasonable read bandwidth from the database. If the client stops
 	// iteration early, considerable disk and network bandwidth may be wasted.
 	StreamingModeSerial StreamingMode = 5
 )
@@ -658,15 +858,15 @@ type ErrorPredicate int
 
 const (
 
-	// Returns ``true`` if the error indicates the operations in the transactions
+	// Returns “true“ if the error indicates the operations in the transactions
 	// should be retried because of transient error.
 	ErrorPredicateRetryable ErrorPredicate = 50000
 
-	// Returns ``true`` if the error indicates the transaction may have succeeded,
+	// Returns “true“ if the error indicates the transaction may have succeeded,
 	// though not in a way the system can verify.
 	ErrorPredicateMaybeCommitted ErrorPredicate = 50001
 
-	// Returns ``true`` if the error indicates the transaction has not committed,
+	// Returns “true“ if the error indicates the transaction has not committed,
 	// though in a way that can be retried.
 	ErrorPredicateRetryableNotCommitted ErrorPredicate = 50002
 )
