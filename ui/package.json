@@ -39,8 +39,8 @@
     ]
   },
   "devDependencies": {
-    "@babel/plugin-proposal-object-rest-spread": "7.10.4",
-    "@babel/plugin-transform-block-scoping": "7.10.4",
+    "@babel/plugin-proposal-object-rest-spread": "7.20.7",
+    "@babel/plugin-transform-block-scoping": "7.25.9",
     "@ember/optional-features": "0.7.0",
     "@hashicorp/structure-icons": "1.8.1",
     "@storybook/ember-cli-storybook": "0.2.1",
