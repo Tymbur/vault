@@ -169,7 +169,7 @@
     "merge": "^1.2.1",
     "minimatch": "^3.0.2",
     "minimist": "^1.2.2",
-    "serialize-javascript": "^2.1.1"
+    "serialize-javascript": "^3.0.0"
   },
   "engines": {
     "node": " >= 10.* <11"
