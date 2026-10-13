@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go v1.30.27
 	github.com/containerd/containerd v1.3.4 // indirect
 	github.com/containerd/continuity v0.0.0-20200709052629-daa8e1ccc0bc // indirect
-	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v1.4.2-0.20200319182547-c7ad2b866182
 	github.com/docker/go-connections v0.4.0
 	github.com/fatih/structs v1.1.0
