@@ -825,7 +825,7 @@ github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926
 github.com/tv42/httpunix
-# github.com/ulikunitz/xz v0.5.7
+# github.com/ulikunitz/xz v0.5.15
 github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
