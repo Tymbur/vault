@@ -21,13 +21,13 @@ require (
 	github.com/golang/snappy v0.0.1
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/hashicorp/errwrap v1.0.0
-	github.com/hashicorp/go-cleanhttp v0.5.1
-	github.com/hashicorp/go-hclog v0.14.1
+	github.com/hashicorp/go-cleanhttp v0.5.2
+	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-immutable-radix v1.1.0
 	github.com/hashicorp/go-kms-wrapping/entropy v0.1.0
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/go-plugin v1.0.1
-	github.com/hashicorp/go-retryablehttp v0.6.6 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.2
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/go-version v1.2.0
@@ -35,7 +35,6 @@ require (
 	github.com/hashicorp/hcl v1.0.0
 	github.com/hashicorp/vault/api v1.0.5-0.20200519221902-385fac77e20f
 	github.com/kr/text v0.2.0 // indirect
-	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/mitchellh/copystructure v1.0.0
 	github.com/mitchellh/go-testing-interface v1.0.0
 	github.com/mitchellh/mapstructure v1.3.2
@@ -48,7 +47,7 @@ require (
 	github.com/ryanuber/go-glob v1.0.0
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
-	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980
+	golang.org/x/sys v0.20.0
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.25.0
