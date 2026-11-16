@@ -166,7 +166,7 @@
     "lodash.defaultsdeep": "^4.6.1",
     "lodash.merge": "^4.6.2",
     "lodash": "^4.17.13",
-    "merge": "^1.2.1",
+    "merge": "^2.0.0",
     "minimatch": "^3.0.2",
     "minimist": "^1.2.2",
     "serialize-javascript": "^2.1.1"
